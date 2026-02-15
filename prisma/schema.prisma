@@ -1,0 +1,138 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String    @id @default(cuid())
+  privyId         String    @unique
+  displayName     String?
+  bio             String?
+  avatarUrl       String?
+  discordId       String?   @unique
+  discordUsername  String?
+  discordAvatar   String?
+  twitterId       String?   @unique
+  twitterUsername  String?
+  twitterAvatar   String?
+  lastSyncedAt    DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  guilds              UserGuild[]
+  twitterFollowing    TwitterConnection[] @relation("following")
+  twitterFollowers    TwitterConnection[] @relation("followers")
+  sentFriendships     Friendship[]        @relation("sentFriendships")
+  receivedFriendships Friendship[]        @relation("receivedFriendships")
+  sentMessages        Message[]           @relation("sentMessages")
+  receivedMessages    Message[]           @relation("receivedMessages")
+  notifications       Notification[]
+
+  @@index([discordId])
+  @@index([twitterId])
+}
+
+model DiscordGuild {
+  id       String @id
+  name     String
+  icon     String?
+
+  members  UserGuild[]
+
+  @@index([name])
+}
+
+model UserGuild {
+  userId   String
+  guildId  String
+
+  user     User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  guild    DiscordGuild @relation(fields: [guildId], references: [id], onDelete: Cascade)
+
+  @@id([userId, guildId])
+  @@index([guildId])
+}
+
+model TwitterConnection {
+  id          String @id @default(cuid())
+  userId      String
+  targetId    String
+  type        TwitterConnectionType
+
+  user        User   @relation("following", fields: [userId], references: [id], onDelete: Cascade)
+  target      User   @relation("followers", fields: [targetId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, targetId, type])
+  @@index([targetId])
+}
+
+enum TwitterConnectionType {
+  FOLLOWING
+  FOLLOWER
+}
+
+model Friendship {
+  id         String           @id @default(cuid())
+  senderId   String
+  receiverId String
+  status     FriendshipStatus @default(PENDING)
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+
+  sender     User @relation("sentFriendships", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver   User @relation("receivedFriendships", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@unique([senderId, receiverId])
+  @@index([receiverId])
+  @@index([status])
+}
+
+enum FriendshipStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  BLOCKED
+}
+
+model Message {
+  id         String   @id @default(cuid())
+  senderId   String
+  receiverId String
+  content    String
+  read       Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  sender     User @relation("sentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver   User @relation("receivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@index([senderId, receiverId])
+  @@index([receiverId, read])
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String
+  body      String?
+  data      Json?
+  read      Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, read])
+  @@index([createdAt])
+}
+
+enum NotificationType {
+  FRIEND_REQUEST
+  FRIEND_ACCEPTED
+  NEW_MESSAGE
+  NEW_MATCH
+  SYNC_COMPLETE
+}

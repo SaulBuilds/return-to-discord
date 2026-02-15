@@ -1,0 +1,7 @@
+{
+  "updated_at": null,
+  "total_matches": 0,
+  "leaderboard": [],
+  "methodology": "Bradley-Terry with 1000-sample bootstrap CI",
+  "note": "Run benchmarks for 2+ agents, then: node .agentile/benchmarks/scoring/elo.mjs --recalculate"
+}

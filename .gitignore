@@ -1,0 +1,43 @@
+# ─── Polyp Framework ───────────────────────────────────
+.agentile/benchmarks/results/
+.agentile/plans/*.active.md
+*.local.md
+.env
+.env.*
+!.env.example
+
+# ─── Node ──────────────────────────────────────────────
+node_modules/
+dist/
+build/
+.next/
+out/
+coverage/
+*.tsbuildinfo
+next-env.d.ts
+.vercel
+
+# ─── Python ────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+htmlcov/
+
+# ─── Rust ──────────────────────────────────────────────
+target/
+Cargo.lock
+
+# ─── OS ────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# ─── IDE ───────────────────────────────────────────────
+.idea/
+.vscode/settings.json
+*.code-workspace

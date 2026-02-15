@@ -1,0 +1,6 @@
+# Polyp Framework — Aider configuration
+# Points aider to read AGENTS.md as its conventions file
+read:
+  - AGENTS.md
+  - .agentile/skills/tdd-strobilation.md
+  - .agentile/skills/commit-conventions.md
