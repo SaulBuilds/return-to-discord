@@ -1,35 +1,94 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { usePrivy, useLinkAccount } from "@privy-io/react-auth";
 import { useSync } from "@/hooks/use-sync";
-import { Hash, ExternalLink, Github, Check, RefreshCw } from "lucide-react";
+import { Hash, ExternalLink, Github, Check, RefreshCw, AlertCircle } from "lucide-react";
 
 export function SocialConnections() {
   const [mounted, setMounted] = useState(false);
+  const [linkError, setLinkError] = useState<string | null>(null);
   const { user, getAccessToken, authenticated } = usePrivy();
   const { syncing, sync } = useSync();
+  const hasSyncedRef = useRef(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  const { linkDiscord, linkTwitter, linkGithub } = useLinkAccount({
-    onSuccess: async () => {
-      // After linking, upsert the user so our DB picks up the new account
-      try {
-        const token = await getAccessToken();
+  // Sync Privy linked accounts to DB whenever user object changes
+  // This catches OAuth redirects where onSuccess may not fire
+  const syncToDb = useCallback(async () => {
+    if (!authenticated) return;
+    try {
+      const token = await getAccessToken();
+      if (token) {
         await fetch("/api/auth/callback", {
           method: "POST",
           headers: { Authorization: `Bearer ${token}` },
         });
-        // Auto-sync after linking
+      }
+    } catch (err) {
+      console.error("Failed to sync accounts to DB:", err);
+    }
+  }, [authenticated, getAccessToken]);
+
+  // On mount and whenever Privy user changes, sync linked accounts to DB
+  useEffect(() => {
+    if (!authenticated || !user) return;
+
+    // Build a fingerprint of linked account types to detect changes
+    const linkedTypes = user.linkedAccounts
+      ?.map((a) => a.type)
+      .sort()
+      .join(",") ?? "";
+
+    // Always sync on first mount (handles OAuth redirect return)
+    if (!hasSyncedRef.current) {
+      hasSyncedRef.current = true;
+      syncToDb();
+      return;
+    }
+
+    // Sync when linked accounts change
+    syncToDb();
+  }, [authenticated, user, syncToDb]);
+
+  const { linkDiscord, linkTwitter, linkGithub } = useLinkAccount({
+    onSuccess: async () => {
+      setLinkError(null);
+      // Persist to DB and sync data
+      try {
+        await syncToDb();
         await sync();
       } catch (err) {
         console.error("Failed to sync after linking:", err);
       }
     },
+    onError: (error) => {
+      console.error("Link account error:", error);
+      const msg = typeof error === "string" ? error : (error as { message?: string })?.message;
+      if (msg?.includes("not configured") || msg?.includes("not enabled")) {
+        setLinkError("This login method is not enabled. Configure it in the Privy dashboard.");
+      } else {
+        setLinkError("Failed to connect account. Please try again.");
+      }
+    },
   });
+
+  const handleLink = (platform: "discord" | "twitter" | "github") => {
+    setLinkError(null);
+    try {
+      if (platform === "discord") linkDiscord();
+      else if (platform === "twitter") linkTwitter();
+      else if (platform === "github") linkGithub();
+    } catch (err) {
+      console.error(`Failed to start ${platform} linking:`, err);
+      setLinkError(
+        `Failed to connect ${platform}. Make sure ${platform} is enabled in your Privy dashboard settings.`
+      );
+    }
+  };
 
   const discord = user?.linkedAccounts?.find(
     (a) => a.type === "discord_oauth"
@@ -79,6 +138,13 @@ export function SocialConnections() {
         )}
       </div>
 
+      {linkError && (
+        <div className="mb-4 flex items-start gap-2 rounded-lg bg-red/10 p-3">
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-red" />
+          <p className="text-sm text-red">{linkError}</p>
+        </div>
+      )}
+
       {connectedCount === 0 && (
         <p className="mb-4 text-sm text-text-muted">
           Link your social accounts to start discovering friends across
@@ -107,7 +173,7 @@ export function SocialConnections() {
             </span>
           ) : (
             <button
-              onClick={() => linkDiscord()}
+              onClick={() => handleLink("discord")}
               className="rounded-lg bg-[#5865F2] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#4752C4]"
             >
               Connect
@@ -135,7 +201,7 @@ export function SocialConnections() {
             </span>
           ) : (
             <button
-              onClick={() => linkTwitter()}
+              onClick={() => handleLink("twitter")}
               className="rounded-lg bg-black px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-gray-800"
             >
               Connect
@@ -163,7 +229,7 @@ export function SocialConnections() {
             </span>
           ) : (
             <button
-              onClick={() => linkGithub()}
+              onClick={() => handleLink("github")}
               className="rounded-lg bg-[#24292e] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#3b434b]"
             >
               Connect
