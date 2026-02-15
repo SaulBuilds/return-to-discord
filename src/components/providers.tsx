@@ -3,7 +3,7 @@
 import { PrivyProvider } from "@privy-io/react-auth";
 import { type ReactNode, useEffect, useState } from "react";
 
-const privyAppId = process.env.NEXT_PUBLIC_PRIVY_APP_ID;
+const privyAppId = process.env.NEXT_PUBLIC_PRIVY_APP_ID?.trim();
 
 export function Providers({ children }: { children: ReactNode }) {
   const [mounted, setMounted] = useState(false);
