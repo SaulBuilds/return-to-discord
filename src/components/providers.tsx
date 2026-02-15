@@ -1,13 +1,19 @@
 "use client";
 
 import { PrivyProvider } from "@privy-io/react-auth";
-import { type ReactNode } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 
 const privyAppId = process.env.NEXT_PUBLIC_PRIVY_APP_ID;
 
 export function Providers({ children }: { children: ReactNode }) {
-  if (!privyAppId) {
-    // During build / SSG when no env is set, just render children
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // During SSR/SSG or when no Privy app ID is configured, render children without Privy
+  if (!mounted || !privyAppId) {
     return <>{children}</>;
   }
 
