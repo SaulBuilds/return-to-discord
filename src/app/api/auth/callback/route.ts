@@ -19,6 +19,9 @@ export async function POST(request: NextRequest) {
     const twitterAccount = privyUser.linkedAccounts.find(
       (a) => a.type === "twitter_oauth"
     );
+    const githubAccount = privyUser.linkedAccounts.find(
+      (a) => a.type === "github_oauth"
+    );
 
     // Upsert user
     const user = await db.user.upsert({
@@ -33,6 +36,11 @@ export async function POST(request: NextRequest) {
         twitterUsername:
           "username" in (twitterAccount ?? {})
             ? (twitterAccount as { username?: string }).username
+            : undefined,
+        githubId: githubAccount?.subject ?? undefined,
+        githubUsername:
+          "username" in (githubAccount ?? {})
+            ? (githubAccount as { username?: string }).username
             : undefined,
       },
       create: {
@@ -50,6 +58,11 @@ export async function POST(request: NextRequest) {
         twitterUsername:
           "username" in (twitterAccount ?? {})
             ? (twitterAccount as { username?: string }).username
+            : null,
+        githubId: githubAccount?.subject ?? null,
+        githubUsername:
+          "username" in (githubAccount ?? {})
+            ? (githubAccount as { username?: string }).username
             : null,
       },
     });

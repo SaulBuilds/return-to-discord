@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { usePrivy } from "@privy-io/react-auth";
+import { usePrivy, useLinkAccount } from "@privy-io/react-auth";
 import { useSync } from "@/hooks/use-sync";
 import {
   RefreshCw,
@@ -10,6 +10,7 @@ import {
   Calendar,
   Users,
   Hash,
+  Github,
 } from "lucide-react";
 
 interface ProfileData {
@@ -19,6 +20,7 @@ interface ProfileData {
   avatarUrl: string | null;
   discordUsername: string | null;
   twitterUsername: string | null;
+  githubUsername: string | null;
   lastSyncedAt: string | null;
   createdAt: string;
   guildCount: number;
@@ -27,8 +29,21 @@ interface ProfileData {
 }
 
 export default function ProfilePage() {
-  const { user: privyUser, getAccessToken, linkDiscord, linkTwitter } =
-    usePrivy();
+  const { user: privyUser, getAccessToken } = usePrivy();
+  const { linkDiscord, linkTwitter, linkGithub } = useLinkAccount({
+    onSuccess: async () => {
+      // Re-upsert user after linking to update DB
+      try {
+        const token = await getAccessToken();
+        await fetch("/api/auth/callback", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      } catch (err) {
+        console.error("Failed to sync after linking:", err);
+      }
+    },
+  });
   const { syncing, sync } = useSync();
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [editing, setEditing] = useState(false);
@@ -288,6 +303,28 @@ export default function ProfilePage() {
             {!profile.twitterUsername && (
               <button
                 onClick={() => linkTwitter()}
+                className="rounded-lg bg-blurple px-4 py-2 text-sm font-medium text-white hover:bg-blurple-hover"
+              >
+                Link
+              </button>
+            )}
+          </div>
+
+          <div className="flex items-center justify-between rounded-lg bg-surface p-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#24292e]">
+                <Github className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <p className="font-medium text-text-primary">GitHub</p>
+                <p className="text-sm text-text-secondary">
+                  {profile.githubUsername ?? "Not linked"}
+                </p>
+              </div>
+            </div>
+            {!profile.githubUsername && (
+              <button
+                onClick={() => linkGithub()}
                 className="rounded-lg bg-blurple px-4 py-2 text-sm font-medium text-white hover:bg-blurple-hover"
               >
                 Link

@@ -1,0 +1,176 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { usePrivy, useLinkAccount } from "@privy-io/react-auth";
+import { useSync } from "@/hooks/use-sync";
+import { Hash, ExternalLink, Github, Check, RefreshCw } from "lucide-react";
+
+export function SocialConnections() {
+  const [mounted, setMounted] = useState(false);
+  const { user, getAccessToken, authenticated } = usePrivy();
+  const { syncing, sync } = useSync();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const { linkDiscord, linkTwitter, linkGithub } = useLinkAccount({
+    onSuccess: async () => {
+      // After linking, upsert the user so our DB picks up the new account
+      try {
+        const token = await getAccessToken();
+        await fetch("/api/auth/callback", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        // Auto-sync after linking
+        await sync();
+      } catch (err) {
+        console.error("Failed to sync after linking:", err);
+      }
+    },
+  });
+
+  const discord = user?.linkedAccounts?.find(
+    (a) => a.type === "discord_oauth"
+  );
+  const twitter = user?.linkedAccounts?.find(
+    (a) => a.type === "twitter_oauth"
+  );
+  const github = user?.linkedAccounts?.find((a) => a.type === "github_oauth");
+
+  const discordUsername =
+    discord && "username" in discord ? discord.username : null;
+  const twitterUsername =
+    twitter && "username" in twitter ? twitter.username : null;
+  const githubUsername =
+    github && "username" in github ? github.username : null;
+
+  const connectedCount = [discord, twitter, github].filter(Boolean).length;
+
+  if (!mounted || !authenticated) {
+    return (
+      <div className="h-64 animate-pulse rounded-xl bg-card" />
+    );
+  }
+
+  return (
+    <div className="rounded-xl border border-border bg-card p-6">
+      <div className="mb-4 flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold text-text-primary">
+            Connect Your Accounts
+          </h3>
+          <p className="text-sm text-text-secondary">
+            {connectedCount}/3 platforms linked
+          </p>
+        </div>
+        {connectedCount > 0 && (
+          <button
+            onClick={() => sync()}
+            disabled={syncing}
+            className="flex items-center gap-2 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:bg-surface disabled:opacity-50"
+          >
+            <RefreshCw
+              className={`h-3.5 w-3.5 ${syncing ? "animate-spin" : ""}`}
+            />
+            {syncing ? "Syncing..." : "Sync"}
+          </button>
+        )}
+      </div>
+
+      {connectedCount === 0 && (
+        <p className="mb-4 text-sm text-text-muted">
+          Link your social accounts to start discovering friends across
+          platforms.
+        </p>
+      )}
+
+      <div className="space-y-3">
+        {/* Discord */}
+        <div className="flex items-center justify-between rounded-lg bg-surface p-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#5865F2]">
+              <Hash className="h-5 w-5 text-white" />
+            </div>
+            <div>
+              <p className="font-medium text-text-primary">Discord</p>
+              <p className="text-sm text-text-secondary">
+                {discordUsername ?? "Not connected"}
+              </p>
+            </div>
+          </div>
+          {discord ? (
+            <span className="flex items-center gap-1.5 rounded-full bg-green/10 px-3 py-1 text-xs font-medium text-green">
+              <Check className="h-3.5 w-3.5" />
+              Connected
+            </span>
+          ) : (
+            <button
+              onClick={() => linkDiscord()}
+              className="rounded-lg bg-[#5865F2] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#4752C4]"
+            >
+              Connect
+            </button>
+          )}
+        </div>
+
+        {/* Twitter */}
+        <div className="flex items-center justify-between rounded-lg bg-surface p-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-black">
+              <ExternalLink className="h-5 w-5 text-white" />
+            </div>
+            <div>
+              <p className="font-medium text-text-primary">Twitter / X</p>
+              <p className="text-sm text-text-secondary">
+                {twitterUsername ? `@${twitterUsername}` : "Not connected"}
+              </p>
+            </div>
+          </div>
+          {twitter ? (
+            <span className="flex items-center gap-1.5 rounded-full bg-green/10 px-3 py-1 text-xs font-medium text-green">
+              <Check className="h-3.5 w-3.5" />
+              Connected
+            </span>
+          ) : (
+            <button
+              onClick={() => linkTwitter()}
+              className="rounded-lg bg-black px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-gray-800"
+            >
+              Connect
+            </button>
+          )}
+        </div>
+
+        {/* GitHub */}
+        <div className="flex items-center justify-between rounded-lg bg-surface p-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#24292e]">
+              <Github className="h-5 w-5 text-white" />
+            </div>
+            <div>
+              <p className="font-medium text-text-primary">GitHub</p>
+              <p className="text-sm text-text-secondary">
+                {githubUsername ?? "Not connected"}
+              </p>
+            </div>
+          </div>
+          {github ? (
+            <span className="flex items-center gap-1.5 rounded-full bg-green/10 px-3 py-1 text-xs font-medium text-green">
+              <Check className="h-3.5 w-3.5" />
+              Connected
+            </span>
+          ) : (
+            <button
+              onClick={() => linkGithub()}
+              className="rounded-lg bg-[#24292e] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#3b434b]"
+            >
+              Connect
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

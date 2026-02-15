@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { usePrivy } from "@privy-io/react-auth";
+import { useLogout } from "@privy-io/react-auth";
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard,
@@ -25,7 +25,11 @@ const navItems = [
 
 export function NavSidebar() {
   const pathname = usePathname();
-  const { logout } = usePrivy();
+  const { logout } = useLogout({
+    onSuccess: () => {
+      window.location.href = "/";
+    },
+  });
 
   return (
     <>

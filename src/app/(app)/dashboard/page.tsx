@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePrivy } from "@privy-io/react-auth";
 import { UserCard } from "@/components/user-card";
+import { SocialConnections } from "@/components/social-connections";
 import type { MatchedUser } from "@/lib/matching";
 import { Compass, TrendingUp, Users } from "lucide-react";
 
@@ -61,6 +62,11 @@ export default function DashboardPage() {
         <p className="mt-1 text-text-secondary">
           Your cross-platform friend discovery overview
         </p>
+      </div>
+
+      {/* Social Connections */}
+      <div className="mb-8">
+        <SocialConnections />
       </div>
 
       {/* Stats */}

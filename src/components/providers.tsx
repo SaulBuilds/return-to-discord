@@ -25,7 +25,7 @@ export function Providers({ children }: { children: ReactNode }) {
           theme: "dark",
           accentColor: "#5865F2",
         },
-        loginMethods: ["email", "google", "discord", "twitter"],
+        loginMethods: ["email", "google", "discord", "twitter", "github"],
       }}
     >
       {children}

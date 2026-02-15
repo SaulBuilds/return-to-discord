@@ -1,6 +1,9 @@
 import { NavSidebar } from "@/components/nav-sidebar";
 import { NotificationBell } from "@/components/notification-bell";
 
+// All app routes use Privy hooks and require authentication — skip SSG
+export const dynamic = "force-dynamic";
+
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-background">

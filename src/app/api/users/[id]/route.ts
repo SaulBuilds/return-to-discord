@@ -56,6 +56,7 @@ export async function GET(
         avatarUrl: user.avatarUrl,
         discordUsername: user.discordUsername,
         twitterUsername: user.twitterUsername,
+        githubUsername: user.githubUsername,
         lastSyncedAt: user.lastSyncedAt,
         createdAt: user.createdAt,
         guildCount: user.guilds.length,
